@@ -7,6 +7,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import ai.onnxruntime.OnnxTensor
+import ai.onnxruntime.OnnxValue
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import java.io.File
@@ -84,8 +85,22 @@ class MainActivity : FlutterActivity() {
 
 		val shape = longArrayOf(1, 3, imgsz.toLong(), imgsz.toLong())
 		val tensor = OnnxTensor.createTensor(env, java.nio.FloatBuffer.wrap(nchw), shape)
-		val results = session?.run(listOf(tensor)) ?: throw Exception("Session not loaded")
-		val first = results[0].value
+		val sess = session ?: throw Exception("Session not loaded")
+		val inputName = sess.inputNames.iterator().next()
+		val result = sess.run(mapOf(inputName to tensor))
+		val onnxVal: OnnxValue = result.get(0)
+		val first = try {
+			// prefer getValue() for Java interop
+			onnxVal.getValue()
+		} catch (e: Throwable) {
+			// fallback to property access if available
+			try {
+				val vField = onnxVal::class.java.getMethod("getValue")
+				vField.invoke(onnxVal)
+			} catch (ex: Exception) {
+				throw Exception("Unable to read ONNX output value", ex)
+			}
+		}
 		val outList = mutableListOf<Float>()
 		when (first) {
 			is Array<*> -> {
@@ -106,7 +121,7 @@ class MainActivity : FlutterActivity() {
 			else -> throw Exception("Unsupported output type: ${first::class}")
 		}
 		// release resources
-		results.forEach { it.close() }
+		result.close()
 		tensor.close()
 		return outList
 	}
