@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'dart:math';
 
 import 'package:image/image.dart' as img;
+import 'dart:typed_data';
+import 'onnx_service.dart';
 // path_provider は Flutter 専用のため使用しない（Dart 実行向けに systemTemp を使用）
 
 class Detector {
