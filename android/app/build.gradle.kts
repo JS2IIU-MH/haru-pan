@@ -45,4 +45,6 @@ flutter {
 
 dependencies {
     implementation("com.google.mlkit:text-recognition-japanese:16.0.0")
+    // ONNX Runtime for Android (mobile runtime)
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.15.1")
 }
